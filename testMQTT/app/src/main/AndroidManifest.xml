@@ -22,10 +22,17 @@
             </intent-filter>
         </activity>
 
-        <service android:name="org.eclipse.paho.android.service.MqttService" >
-        </service>
+        <service android:name="org.eclipse.paho.android.service.MqttService" />
 
+        <activity
+            android:name=".Setting2Activity"
+            android:label="@string/title_activity_setting2"
+            android:theme="@style/AppTheme.NoActionBar" />
 
+        <service
+            android:name=".ConnectionService"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
 
 </manifest>
