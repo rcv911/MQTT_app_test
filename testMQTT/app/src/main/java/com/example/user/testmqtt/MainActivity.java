@@ -13,10 +13,14 @@ import android.view.View.OnClickListener;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.w3c.dom.Text;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -30,18 +34,27 @@ public class MainActivity extends AppCompatActivity {
     //MQTT
     MqttAndroidClient client;
 
+    MqttConnectOptions options;
+
     //btn_setting
     ImageButton Btn_Setting, Btn_Connection;
-    boolean Msetting, Mconnect = true;
+    boolean Mconnect = true;
+
+    //subscribe text
+    TextView SubText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
         //init components
         EditText TextTopic = (EditText) findViewById(R.id.texttopic);
         EditText TextMessage = (EditText) findViewById(R.id.textmessage);
+
+        //init subscribe text view
+        SubText = (TextView) findViewById(R.id.subText);
 
 
         //add text
@@ -73,6 +86,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // нужно условие, при кот после заполнения данных сервера отобразится кнопка соединения !!!
+        // либо как-то по-другому организовать код программы
         //Btn_Connection
         Btn_Connection.setOnClickListener(new OnClickListener() {
             @Override
@@ -92,6 +107,9 @@ public class MainActivity extends AppCompatActivity {
                    // Toast.makeText(MainActivity.this, getIntent().getExtras().getString("nameuser"), Toast.LENGTH_SHORT).show();
                    // Toast.makeText(MainActivity.this, getIntent().getExtras().getString("psuser"), Toast.LENGTH_SHORT).show();
                     ConnetcMQTT(v);
+
+                    HostConnect(v);
+
                     TextConnection.setText("Connected to " + mqqthost);
 
                 }
@@ -99,6 +117,8 @@ public class MainActivity extends AppCompatActivity {
                     //pic off connect
                     Btn_Connection.setImageResource(R.mipmap.ic_cloud_black_24dp);
                     //Dissconet from MQTT host
+                    HostDisconnetc(v);
+
                     TextConnection.setText("Disconnected");
                 }
 
@@ -118,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
         String clientId = MqttClient.generateClientId();
         client = new MqttAndroidClient(this.getApplicationContext(), mqqthost, clientId);
 
-        MqttConnectOptions options = new MqttConnectOptions();
+        options = new MqttConnectOptions();
         options.setUserName(username);
         options.setPassword(userps.toCharArray());
 
@@ -129,6 +149,9 @@ public class MainActivity extends AppCompatActivity {
                 public void onSuccess(IMqttToken asyncActionToken) {
                     // We are connected
                     Toast.makeText(MainActivity.this, "connected", Toast.LENGTH_SHORT).show();
+                    //We are Subscribed
+                    setSubscribe();
+
                 }
 
                 @Override
@@ -140,6 +163,11 @@ public class MainActivity extends AppCompatActivity {
         } catch (MqttException e) {
             e.printStackTrace();
         }
+
+
+        //Set Callback Reaction
+        MCallback();
+
     } //end method
 
 
@@ -169,10 +197,84 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    public void HostConnect(View v) {
+        try {
+            IMqttToken token = client.connect(options);
+            token.setActionCallback(new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    // We are connected
+                    Toast.makeText(MainActivity.this, "connected", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    // Something went wrong e.g. connection timeout or firewall problems
+                    Toast.makeText(MainActivity.this, "connection failed", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+
+    }
 
 
+    public void HostDisconnetc(View v) {
+        try {
+            IMqttToken token = client.disconnect();
+            token.setActionCallback(new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    // We are disconnected
+                    Toast.makeText(MainActivity.this, "disconnected", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    // Something went wrong e.g. disconnection timeout or firewall problems
+                    Toast.makeText(MainActivity.this, "disconnection failed", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+
+    }
 
 
+    //to Subscribe
+    private void setSubscribe() {
+        try {
+            client.subscribe(topic, 0); // (name of topic, QoS = 0)
+        }catch (MqttException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    public void MCallback() {
+        client.setCallback(new MqttCallback() {
+            @Override
+            public void connectionLost(Throwable cause) {
+
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
+                SubText.setText(new String(message.getPayload()));
+
+                //сюда можно добавить вибрацию телефона и рингтон
+                //описывать "сущности" вибрации и рингтона в onCreate!
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+
+            }
+        });
+    }
 
 
 
