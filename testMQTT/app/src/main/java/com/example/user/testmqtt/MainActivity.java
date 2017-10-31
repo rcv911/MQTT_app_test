@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
         Btn_Connection = (ImageButton) findViewById(R.id.btn_connection);
         publishButton = (Button) findViewById(R.id.publishButton);
 
-        new Setting2Activity().load();
+//        new Setting2Activity().load();
 
         OnClickListener onClickListener = new OnClickListener() {
             @Override
@@ -132,6 +132,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy(){
         super.onDestroy();
-        new Setting2Activity().save();
+//        new Setting2Activity().save();
     }
 } // end code
